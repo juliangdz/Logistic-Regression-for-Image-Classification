@@ -15,10 +15,11 @@ warnings.filterwarnings('ignore')
 import argparse
 from sklearn.model_selection import train_test_split,GridSearchCV
 from sklearn.linear_model import LogisticRegression
+from sklearn import metrics
 
 class DataExplorer(object):
     def __init__(self):
-        self.input_dir = "D:/Workspace_Codes/logistic_regression/images/"
+        self.input_dir = "D:/Workspace_Codes/Logistic-Regression-for-Image-Classification/Dataset/"
         self.img_size=128
         self.classes=["messy","clean"]
         self.fdirs=["train","val","test"]
@@ -60,7 +61,8 @@ class DataExplorer(object):
         plt.imshow(img2.reshape(self.img_size,self.img_size))
         plt.axis('off')
         plt.title("Data in GrayScale")
-        plt.show()
+        plt.savefig("grayscale.jpg")
+        # plt.show()
     def run(self):
         self.dir_path()
         print("[INFO]   Dataset Directory : ",self.fdirs_path)
@@ -152,7 +154,7 @@ class CustomLogisticRegression(object):
         self.init_W=np.full((self.x_train.shape[0],1),0.01)
         self.init_B=0.0
         self.lr_rate=0.01
-        self.num_iter=1500
+        self.num_iter=2500
     def sigmoid(self,z):
         y_head=1/(1+np.exp(-z))
         return y_head
@@ -185,7 +187,8 @@ class CustomLogisticRegression(object):
         plt.xticks(index,rotation='vertical')
         plt.xlabel("Number of Iterations")
         plt.ylabel("Cost")
-        plt.show()
+        plt.savefig("training_grph.jpg")
+        # plt.show()
         return params,gradients,cost_list
     def predict(self,x_data):
         z = self.sigmoid(np.dot(self.init_W.T,x_data)+self.init_B)
@@ -196,10 +199,29 @@ class CustomLogisticRegression(object):
             else:
                 y_pred[0,i]=1
         return y_pred
+    def get_cm(self,preds):
+        cm=metrics.confusion_matrix(self.y_test.T,preds)
+        print("[INFO]   Confusion Metrics : ",cm)
+        plt.figure(figsize=(9,9))
+        plt.imshow(cm,interpolation='nearest',cmap='Pastel1')
+        plt.title('Confusion Matrix',size=15)
+        plt.colorbar()
+        ticks_marks=np.arange(10)
+        plt.xticks(ticks_marks,["0","1","2","3","4","5","6","7","8","9"],rotation=45,size=10)
+        plt.yticks(ticks_marks,["0","1","2","3","4","5","6","7","8","9"],size=10)
+        plt.tight_layout()
+        plt.ylabel('Actual Label ',size=15)
+        plt.xlabel('Predicted Label',size=15)
+        width,height=cm.shape
+        for x in range(width):
+            for y in range(height):
+                plt.annotate(str(cm[x][y]),xy=(y,x),horizontalalignment='center',verticalalignment='center')
+        plt.savefig("confusion_metrics.jpg")
+        plt.show()
     def hyper_tuning(self):
-        grid_search={"C":np.logspace(-3,3,7),"penalty":["l1","l2"]}
-        logregres=LogisticRegression(random_state=42)
-        log_reg_cv=GridSearchCV(logregres,grid_search,cv=10)
+        grid_search={"C":np.logspace(-5,5,20),"penalty":["l1","l2"]}
+        logregres=LogisticRegression(random_state=72)
+        log_reg_cv=GridSearchCV(logregres,grid_search,cv=60)
         log_reg_cv.fit(self.x_train.T,self.y_train.T)
         print("[INFO]   Best Hyper Parameters : ",log_reg_cv.best_params_)
         print("[INFO]   Accuracy with Hype Tuning : ",log_reg_cv.best_score_)
@@ -208,7 +230,13 @@ class CustomLogisticRegression(object):
         log_reg_ht=LogisticRegression(C=log_reg_cv.best_params_['C'],penalty=log_reg_cv.best_params_['penalty'])
         log_reg_ht.fit(self.x_train.T,self.y_train.T)
         print("[INFO]   Train Accuracy after Hyper Tuning : ",format(log_reg_ht.fit(self.x_train.T,self.y_train.T).score(self.x_train.T,self.y_train.T)))
-        print("[INFO]   Test Accuracy after Hyper Tuning : ",format(log_reg_ht.fit(self.x_test.T,self.y_test.T).score(self.x_test.T,self.y_test.T)))
+        # print("[INFO]   Test Accuracy after Hyper Tuning : ",format(log_reg_ht.fit(self.x_test.T,self.y_test.T).score(self.x_test.T,self.y_test.T)))
+
+        hyper_preds=log_reg_ht.predict(self.x_test.T)
+        print("[DEBG]   Hyper preds : ",hyper_preds)
+        hyper_score=log_reg_ht.score(self.x_test.T,self.y_test.T)
+        print("[INFO]   Prediction Accuracy : ",hyper_score)
+        # self.get_cm(hyper_preds)
     def run(self):
         params,grads,cost_list=self.update()
         y_pred_test=self.predict(self.x_test)
