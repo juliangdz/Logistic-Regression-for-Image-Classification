@@ -200,6 +200,10 @@ class CustomLogisticRegression(object):
                 y_pred[0,i]=1
         return y_pred
     def get_cm(self,preds):
+        prec_score=metrics.precision_score(self.y_test.T,preds)
+        recll_score=metrics.recall_score(self.y_test.T,preds)
+        f1_score=metrics.f1_score(self.y_test.T,preds)
+        print("[INFO]   Precision Score : {} \n\tRecall Score : {} \n\tF1 Score : {} ".format(prec_score,recll_score,f1_score))
         cm=metrics.confusion_matrix(self.y_test.T,preds)
         print("[INFO]   Confusion Metrics : ",cm)
         plt.figure(figsize=(9,9))
@@ -236,7 +240,7 @@ class CustomLogisticRegression(object):
         print("[DEBG]   Hyper preds : ",hyper_preds)
         hyper_score=log_reg_ht.score(self.x_test.T,self.y_test.T)
         print("[INFO]   Prediction Accuracy : ",hyper_score)
-        # self.get_cm(hyper_preds)
+        self.get_cm(hyper_preds)
     def run(self):
         params,grads,cost_list=self.update()
         y_pred_test=self.predict(self.x_test)
